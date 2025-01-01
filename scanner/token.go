@@ -1,4 +1,4 @@
-package main
+package scanner
 
 import "fmt"
 
@@ -67,4 +67,23 @@ func NewToken(t TokenType, lexeme string, literal interface{}, line int) *Token 
 
 func (t *Token) String() string {
 	return fmt.Sprintf("%v %v %v", t.Type, t.Lexeme, t.Literal)
+}
+
+var keywords = map[string]TokenType{
+	"and":    AndTT,
+	"class":  ClassTT,
+	"else":   ElseTT,
+	"false":  FalseTT,
+	"for":    ForTT,
+	"fun":    FunTT,
+	"if":     IfTT,
+	"nil":    NilTT,
+	"or":     OrTT,
+	"print":  PrintTT,
+	"return": ReturnTT,
+	"super":  SuperTT,
+	"this":   ThisTT,
+	"true":   TrueTT,
+	"var":    VarTT,
+	"while":  WhileTT,
 }
