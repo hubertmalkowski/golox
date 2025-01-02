@@ -7,24 +7,11 @@ import (
 	"strings"
 )
 
-type LineError struct {
-	Line  int
-	error error
-}
-
-func (se LineError) Error() string {
-	return se.error.Error()
-}
-
-func newLineError(n int, err error) LineError {
-	return LineError{n, err}
-}
-
 type Scanner struct {
 	source  string
 	reader  *strings.Reader
 	runtime *runtime.Runtime
-	tokens  []*Token
+	tokens  TokenList
 	start   int
 	current int
 	line    int
@@ -41,7 +28,7 @@ func NewScanner(s string, r *runtime.Runtime) *Scanner {
 	}
 }
 
-func (s *Scanner) ScanTokens() []*Token {
+func (s *Scanner) ScanTokens() TokenList {
 	for !s.isAtEnd() {
 		s.start = s.current
 		s.scanToken()
@@ -193,20 +180,29 @@ func (s *Scanner) isAtEnd() bool {
 }
 
 func (s *Scanner) string() {
-	for s.peek() != '"' && !s.isAtEnd() {
+	isEscape := false // define isEscape to handle \"
+	for (isEscape || s.peek() != '"') && !s.isAtEnd() {
 		if s.peek() == '\n' {
 			s.line++
 		}
 
-		if s.isAtEnd() {
-			s.runtime.Error(s.line, "Unterminated string")
-			return
+		if s.peek() == '\\' {
+			isEscape = !isEscape
+		} else {
+			isEscape = false
 		}
 
 		s.advance()
-		literal := s.source[s.start+1 : s.current-1]
-		s.addTokenWithLiteral(StringTT, literal)
 	}
+
+	if s.isAtEnd() {
+		s.runtime.Error(s.line, "Unterminated string")
+		return
+	}
+
+	s.advance()
+	literal := s.source[s.start+1 : s.current-1]
+	s.addTokenWithLiteral(StringTT, literal)
 }
 
 func (s *Scanner) number() {
@@ -239,6 +235,7 @@ func (s *Scanner) identifier() {
 	literal := s.source[s.start:s.current]
 	if keyword, ok := keywords[literal]; ok {
 		s.addToken(keyword)
+		return
 	}
 	s.addTokenWithLiteral(IdentifierTT, literal)
 }
